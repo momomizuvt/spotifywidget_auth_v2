@@ -94,7 +94,7 @@
 					</div>
 					<div class="mb-2">
 						<label for="b64input" class="block text-gray-600 text-sm mb-1"
-							>Step 1: Copy your Spotify access token</label
+							>Step 1: Copy your Spotify tokens</label
 						>
 						<div class="flex gap-2 mb-2">
 							<input
@@ -251,7 +251,10 @@
 				if (data.access_token) {
 					document.getElementById("authenticating-msg").style.display = "none";
 					document.getElementById("success-container").style.display = "";
-					document.getElementById("b64input").value = data.access_token;
+					document.getElementById("b64input").value = JSON.stringify({
+						access_token: data.access_token,
+						refresh_token: data.refresh_token,
+					});
 					document.getElementById("json-output").textContent = JSON.stringify(
 						data,
 						null,
