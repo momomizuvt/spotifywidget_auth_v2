@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Spotify Widget Login</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+			rel="stylesheet"
+		/>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+		<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+		<style>
+			body {
+				font-family: "Inter", sans-serif;
+			}
+		</style>
+	</head>
+
+	<body
+		class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50"
+	>
+		<div
+			class="w-full max-w-md p-8 bg-white/90 rounded-2xl shadow-xl border border-gray-100 backdrop-blur-md"
+		>
+			<div class="flex flex-col items-center mb-6">
+				<div
+					class="w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center mb-2 shadow-md"
+				>
+					<svg
+						viewBox="0 0 40 40"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						class="w-8 h-8"
+					>
+						<circle cx="20" cy="20" r="20" fill="#1DB954" />
+						<path
+							d="M12 25c5-2 11-2 16 0"
+							stroke="#fff"
+							stroke-width="2.5"
+							stroke-linecap="round"
+						/>
+						<path
+							d="M14 20c4-1.5 8-1.5 12 0"
+							stroke="#fff"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
+						<path
+							d="M16 16c2.5-.5 5-.5 7.5 0"
+							stroke="#fff"
+							stroke-width="1.5"
+							stroke-linecap="round"
+						/>
+					</svg>
+				</div>
+				<h1 class="text-2xl font-bold text-gray-800 tracking-tight">
+					Spotify Login
+				</h1>
+			</div>
+			<div id="main-content">
+				<p
+					id="authenticating-msg"
+					class="text-gray-700 text-center mb-4 animate-pulse"
+				>
+					Authenticating with Spotify…
+				</p>
+				<div id="success-container" style="display: none">
+					<div class="flex flex-col items-center mb-3">
+						<div
+							class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-2"
+						>
+							<svg
+								class="w-6 h-6 text-green-600"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.5"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M5 13l4 4L19 7"
+								/>
+							</svg>
+						</div>
+						<p class="text-green-700 text-center text-lg font-semibold mb-1">
+							Login succeeded!
+						</p>
+					</div>
+					<div class="mb-2">
+						<label for="b64input" class="block text-gray-600 text-sm mb-1"
+							>Step 1: Copy your Spotify access token</label
+						>
+						<div class="flex gap-2 mb-2">
+							<input
+								id="b64input"
+								type="text"
+								value=""
+								readonly
+								class="flex-1 px-2 py-1 border border-gray-300 rounded bg-gray-100 text-xs text-gray-800 select-all"
+							/>
+							<button
+								id="copy-btn"
+								class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition"
+							>
+								Copy
+							</button>
+						</div>
+					</div>
+					<div class="mb-2">
+						<label class="block text-gray-600 text-sm mb-1"
+							>Step 2: Paste it into the StreamElements widget settings</label
+						>
+					</div>
+					<details class="mb-2">
+						<summary
+							class="cursor-pointer text-xs text-gray-400 hover:text-gray-600"
+						>
+							Show raw token details
+						</summary>
+						<pre
+							id="json-output"
+							class="bg-gray-100 rounded p-2 text-xs text-gray-700 overflow-x-auto mt-1"
+						></pre>
+					</details>
+				</div>
+				<div id="error-container" style="display: none">
+					<div class="flex flex-col items-center mb-6">
+						<div id="error-icon"></div>
+						<h1
+							id="error-title"
+							class="text-2xl font-bold tracking-tight text-center"
+						></h1>
+						<p id="error-desc" class="text-sm mt-2 text-center"></p>
+					</div>
+					<div id="error-extra"></div>
+					<details class="mb-2" id="error-details" style="display: none">
+						<summary
+							class="cursor-pointer text-xs text-gray-400 hover:text-gray-600"
+						>
+							Show error details
+						</summary>
+						<pre
+							id="error-json"
+							class="bg-gray-100 rounded p-2 text-xs text-gray-700 overflow-x-auto mt-1"
+						></pre>
+					</details>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			var redirectUri =
+				"https://momomizuvt.github.io/spotifywidget_auth_v2/callback";
+			if (
+				window.location.hostname === "localhost" ||
+				window.location.hostname === "127.0.0.1"
+			) {
+				redirectUri = "http://127.0.0.1:5500/callback.html";
+			}
+
+			const ERROR_TYPES = {
+				REDIRECT: "redirect",
+				CSRF: "csrf",
+				MISSING: "missing",
+				GENERIC: "generic",
+			};
+			const ERROR_CONFIG = {
+				icon: '<div class="w-14 h-14 rounded-full bg-gradient-to-br from-red-400 to-orange-400 flex items-center justify-center mb-2 shadow-md"><svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fee2e2"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 9l-6 6m0-6l6 6" /></svg></div>',
+				color: "from-red-50 via-white to-orange-50",
+				showDetails: true,
+				[ERROR_TYPES.REDIRECT]: {
+					title: "Redirect URI Not Supported",
+					desc: "Your Spotify app's redirect URI is not set correctly.",
+					extra: `<ol class="list-decimal pl-5 text-sm text-gray-700 mb-4">
+                      <li>Go to <a href="https://developer.spotify.com/dashboard/applications" target="_blank" class="underline text-blue-600">Spotify Developer Dashboard</a>.</li>
+                      <li>Select your app and click <b>Edit Settings</b>.</li>
+                      <li>Add this URI to <b>Redirect URIs</b>:
+                        <div class="bg-gray-100 rounded px-2 py-1 mt-1 font-mono text-xs break-all select-all">https://momomizuvt.github.io/spotify-widget/callback</div>
+                      </li>
+                      <li>Save your changes and try logging in again.</li>
+                    </ol>`,
+				},
+				[ERROR_TYPES.CSRF]: {
+					title: "Invalid state",
+					desc: "Possible CSRF attack detected. Please restart the login process.",
+					extra: "",
+				},
+				[ERROR_TYPES.MISSING]: {
+					title: "Missing information",
+					desc: "Missing code, state, or verifier. Please restart the login process.",
+					extra: "",
+				},
+				[ERROR_TYPES.GENERIC]: {
+					title: "Something went wrong",
+					desc: "We couldn't retrieve your Spotify token. Please try again or contact us on Etsy and provide a screenshot.",
+					extra: "",
+				},
+			};
+
+			function showError(type, errorData) {
+				const config = ERROR_CONFIG[type] || ERROR_CONFIG[ERROR_TYPES.GENERIC];
+				document.body.className = `min-h-screen flex items-center justify-center bg-gradient-to-br ${ERROR_CONFIG.color}`;
+				// Hide all main UI except error
+				document.getElementById("success-container").style.display = "none";
+				document.getElementById("authenticating-msg").style.display = "none";
+				document.querySelector(
+					".flex.flex-col.items-center.mb-6"
+				).style.display = "none"; // hide logo and header
+				// Show error container
+				const errorContainer = document.getElementById("error-container");
+				errorContainer.style.display = "";
+				document.getElementById("error-icon").innerHTML = ERROR_CONFIG.icon;
+				document.getElementById("error-title").textContent = config.title;
+				document.getElementById("error-desc").textContent = config.desc;
+				document.getElementById("error-extra").innerHTML = config.extra || "";
+				if (ERROR_CONFIG.showDetails && errorData) {
+					document.getElementById("error-details").style.display = "";
+					document.getElementById("error-json").textContent = JSON.stringify(
+						errorData,
+						null,
+						2
+					);
+				} else {
+					document.getElementById("error-details").style.display = "none";
+				}
+			}
+
+			async function exchangeCode(code, verifier, clientId) {
+				const params = new URLSearchParams({
+					grant_type: "authorization_code",
+					code,
+					redirect_uri: redirectUri,
+					client_id: clientId,
+					code_verifier: verifier,
+				});
+
+				const resp = await fetch("https://accounts.spotify.com/api/token", {
+					method: "POST",
+					headers: { "Content-Type": "application/x-www-form-urlencoded" },
+					body: params.toString(),
+				});
+
+				const data = await resp.json();
+				localStorage.clear();
+				if (data.access_token) {
+					document.getElementById("authenticating-msg").style.display = "none";
+					document.getElementById("success-container").style.display = "";
+					document.getElementById("b64input").value = data.access_token;
+					document.getElementById("json-output").textContent = JSON.stringify(
+						data,
+						null,
+						2
+					);
+					$("#copy-btn").on("click", function () {
+						$("#b64input")[0].select();
+						document.execCommand("copy");
+					});
+				} else if (
+					data.error === "invalid_grant" &&
+					data.error_description &&
+					data.error_description.toLowerCase().includes("invalid redirect uri")
+				) {
+					showError(ERROR_TYPES.REDIRECT, data);
+				} else {
+					showError(ERROR_TYPES.GENERIC, data);
+				}
+			}
+
+			const params = new URLSearchParams(window.location.search);
+			const code = params.get("code");
+			const state = params.get("state");
+			const storedState = localStorage.getItem("spotify_auth_state");
+			const verifier = localStorage.getItem("spotify_code_verifier");
+			const clientId = localStorage.getItem("spotify_client_id");
+
+			if (state !== storedState) {
+				showError(ERROR_TYPES.CSRF);
+			} else if (code && verifier && clientId) {
+				exchangeCode(code, verifier, clientId);
+			} else {
+				showError(ERROR_TYPES.MISSING);
+			}
+		</script>
+	</body>
+</html>

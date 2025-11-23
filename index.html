@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Spotify Widget Login</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<style>
+			body {
+				font-family: "Inter", sans-serif;
+			}
+		</style>
+	</head>
+
+	<body
+		class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50"
+	>
+		<div
+			class="w-full max-w-7xl m-10 p-8 bg-white/90 rounded-2xl shadow-xl border border-gray-100 backdrop-blur-md"
+		>
+			<div class="mb-6">
+				<details open>
+					<summary
+						class="cursor-pointer text-lg font-semibold text-gray-800 mb-2 select-none"
+					>
+						How to create your Spotify API app
+					</summary>
+					<div id="spotify-steps" class="pl-2">
+						<div class="step" data-step="1">
+							<label class="flex items-start gap-2 cursor-pointer">
+								<input
+									type="checkbox"
+									class="step-checkbox mt-1"
+									data-step="1"
+								/>
+								<span
+									>Go to
+									<a
+										href="https://developer.spotify.com/dashboard/applications"
+										target="_blank"
+										class="underline text-blue-600"
+										>Spotify Developer Dashboard</a
+									>
+									and log in.</span
+								>
+							</label>
+						</div>
+						<div class="step" data-step="2" style="display: none">
+							<label class="flex items-start gap-2 cursor-pointer">
+								<input
+									type="checkbox"
+									class="step-checkbox mt-1"
+									data-step="2"
+								/>
+								<span>Click <b>Create App</b>.</span>
+							</label>
+						</div>
+						<div class="step" data-step="3" style="display: none">
+							<label class="flex items-start gap-2 cursor-pointer">
+								<input
+									type="checkbox"
+									class="step-checkbox mt-1"
+									data-step="3"
+								/>
+								<span>
+									Fill in the app details as shown below, including the
+									<b>Redirect URI</b>, then click <b>Create</b>:
+								</span>
+							</label>
+							<div
+								class="bg-gray-100 rounded px-2 py-1 mt-3 font-mono text-xs break-all select-all ml-6"
+							>
+								https://momomizuvt.github.io/spotifywidget_auth_v2/callback
+							</div>
+							<div class="my-4 flex flex-col items-center ml-6">
+								<img
+									src="spotify-create-app.png"
+									alt="Example: Spotify Create App fields"
+									style="width: 100%; max-width: 700px; cursor: zoom-in"
+									class="rounded shadow border border-gray-200 mb-2 example-img"
+									data-img="spotify-create-app.png"
+								/>
+								<span class="text-xs text-gray-500"
+									>Example: How to fill in the Spotify app fields</span
+								>
+							</div>
+						</div>
+						<div class="step" data-step="4" style="display: none">
+							<label class="flex items-start gap-2 cursor-pointer">
+								<input
+									type="checkbox"
+									class="step-checkbox mt-1"
+									data-step="4"
+								/>
+								<span
+									>After creating, copy your <b>Client ID</b> from the app
+									settings and paste it below:</span
+								>
+							</label>
+							<div class="my-4 flex flex-col items-center ml-6">
+								<img
+									src="spotify-client-id.png"
+									alt="Example: Spotify Client ID location"
+									style="width: 100%; max-width: 700px; cursor: zoom-in"
+									class="rounded shadow border border-gray-200 mb-2 example-img"
+									data-img="spotify-client-id.png"
+								/>
+								<span class="text-xs text-gray-500"
+									>Example: Where to find your Spotify Client ID</span
+								>
+							</div>
+						</div>
+					</div>
+				</details>
+			</div>
+			<div class="flex flex-col items-center mb-6">
+				<div
+					class="w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center mb-2 shadow-md"
+				>
+					<svg
+						viewBox="0 0 40 40"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						class="w-8 h-8"
+					>
+						<circle cx="20" cy="20" r="20" fill="#1DB954" />
+						<path
+							d="M12 25c5-2 11-2 16 0"
+							stroke="#fff"
+							stroke-width="2.5"
+							stroke-linecap="round"
+						/>
+						<path
+							d="M14 20c4-1.5 8-1.5 12 0"
+							stroke="#fff"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
+						<path
+							d="M16 16c2.5-.5 5-.5 7.5 0"
+							stroke="#fff"
+							stroke-width="1.5"
+							stroke-linecap="round"
+						/>
+					</svg>
+				</div>
+				<h1 class="text-2xl font-bold text-gray-800 tracking-tight">
+					Spotify Login
+				</h1>
+			</div>
+			<div id="main-content">
+				<label for="client-id" class="block text-gray-600 text-sm mb-1"
+					>Spotify Client ID</label
+				>
+				<input
+					type="text"
+					id="client-id"
+					placeholder="Paste your Client ID"
+					class="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-800 mb-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+				/>
+				<div class="mb-4 flex flex-col items-center">
+					<span class="text-xs text-gray-400"
+						>Find your Client ID in the Spotify Developer Dashboard</span
+					>
+				</div>
+				<button
+					id="login"
+					class="w-full px-4 py-2 bg-green-600 text-white text-base rounded font-semibold hover:bg-green-700 transition"
+				>
+					Login with Spotify
+				</button>
+			</div>
+		</div>
+
+		<script>
+			// Progressive reveal for Spotify steps
+			$(function () {
+				$(".step-checkbox").on("change", function () {
+					var step = parseInt($(this).attr("data-step"));
+					if (this.checked) {
+						var nextStep = step + 1;
+						var $next = $('.step[data-step="' + nextStep + '"]');
+						if ($next.length) $next.slideDown();
+					} else {
+						// Uncheck and hide all following steps
+						var total = $(".step").length;
+						for (var s = step + 1; s <= total; s++) {
+							var $el = $('.step[data-step="' + s + '"]');
+							$el.find(".step-checkbox").prop("checked", false);
+							$el.slideUp();
+						}
+					}
+				});
+			});
+			var redirectUri =
+				"https://momomizuvt.github.io/spotifywidget_auth_v2/callback";
+			const scopes = "user-read-playback-state user-read-currently-playing";
+
+			if (isLocalhost()) {
+				redirectUri = "http://127.0.0.1:5500/callback.html";
+			}
+
+			function isLocalhost() {
+				return (
+					window.location.hostname === "localhost" ||
+					window.location.hostname === "127.0.0.1"
+				);
+			}
+
+			function generateRandomString(length) {
+				const possible =
+					"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+				const array = crypto.getRandomValues(new Uint8Array(length));
+				return Array.from(array)
+					.map((x) => possible[x % possible.length])
+					.join("");
+			}
+
+			async function sha256(buffer) {
+				return await crypto.subtle.digest("SHA-256", buffer);
+			}
+
+			function base64urlEncode(buffer) {
+				return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+					.replace(/=/g, "")
+					.replace(/\+/g, "-")
+					.replace(/\//g, "_");
+			}
+
+			async function generateCodeChallenge(verifier) {
+				const encoder = new TextEncoder();
+				const data = encoder.encode(verifier);
+				const digest = await sha256(data);
+				return base64urlEncode(digest);
+			}
+
+			$("#login").on("click", async () => {
+				const clientId = $("#client-id").val().trim();
+				if (!clientId) return alert("Please enter your Client ID");
+
+				const codeVerifier = generateRandomString(64);
+				const codeChallenge = await generateCodeChallenge(codeVerifier);
+				const state = generateRandomString(16);
+
+				localStorage.setItem("spotify_code_verifier", codeVerifier);
+				localStorage.setItem("spotify_auth_state", state);
+				localStorage.setItem("spotify_client_id", clientId);
+
+				const params = new URLSearchParams({
+					response_type: "code",
+					client_id: clientId,
+					scope: scopes,
+					redirect_uri: redirectUri,
+					state: state,
+					code_challenge_method: "S256",
+					code_challenge: codeChallenge,
+				});
+
+				const authUrl = new URL("https://accounts.spotify.com/authorize");
+				authUrl.search = new URLSearchParams(params).toString();
+				window.location.href = authUrl.toString();
+			});
+		</script>
+	</body>
+</html>
